@@ -68,7 +68,7 @@ module.exports = function (app) {
         delete_password
       });
       
-      thread.created_on = thread.bumped_on = Date.now();
+      // thread.created_on = thread.bumped_on = Date.now();
       await thread.save();
       res.redirect(`/b/${board}/`);
     })
@@ -76,7 +76,7 @@ module.exports = function (app) {
       const { report_id } = req.body;
       const thread = await Thread.findById(report_id);
       thread.reported = true;
-      thread.bumped_on = Date.now();
+      // thread.bumped_on = Date.now();
       await thread.save();
       res.send("reported");
     })
@@ -118,10 +118,9 @@ module.exports = function (app) {
       const thread = await Thread.findById(thread_id);
       thread.replies.push(reply);
       thread.bumped_on = reply.created_on;
+      await thread.save();
       console.log("🚀 ~ file: api.js ~ line 121 ~ thread", thread)
       
-      await thread.save();
-
       res.redirect(`/b/${board}/${thread_id}`);
     })
     .put(async function (req, res) {

@@ -6,21 +6,13 @@ const ObjectId = Schema.ObjectId;
 const ThreadSchema = new Schema(
   {
     board: { type: String, required: true },
-    replies: [{ 
-      _id: { type: ObjectId, ref: "Reply"},
-      text: { type: String, required: true },
-      delete_password: { type: String, required: true  },
-      reported: { type: Boolean, default: false },
-      created_on: { type: Date, default: Date.now },
-    }],
+    replies: [{ type: ObjectId, ref: "Reply" }],
     text: { type: String, required: true },
     delete_password: { type: String, required: true },
-    reported: { type: Boolean },
-    bumped_on: { type: Date },
-    created_on: { type: Date },
+    reported: { type: Boolean, default: false },
   },
   {
-    // timestamps: { createdAt: "created_on" },
+    timestamps: { createdAt: "created_on", updatedAt: "bumped_on" },
     versionKey: false
   }
 );
