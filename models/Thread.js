@@ -6,7 +6,13 @@ const ObjectId = Schema.ObjectId;
 const ThreadSchema = new Schema(
   {
     board: { type: String, required: true },
-    replies: [{ type: ObjectId, ref: "Reply" }],
+    replies: [{ 
+      _id: { type: ObjectId, ref: "Reply"},
+      text: { type: String, required: true },
+      delete_password: { type: String, required: true  },
+      reported: { type: Boolean },
+      created_on: { type: Date, default: Date.now },
+    }],
     text: { type: String, required: true },
     delete_password: { type: String, required: true },
     reported: { type: Boolean },

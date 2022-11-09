@@ -70,7 +70,6 @@ module.exports = function (app) {
       
       thread.created_on = thread.bumped_on = Date.now();
       await thread.save();
-      console.log("🚀 ~ file: api.js ~ line 74 ~ thread", thread);
       res.redirect(`/b/${board}/`);
     })
     .put(async function (req, res) {
@@ -119,6 +118,7 @@ module.exports = function (app) {
       const thread = await Thread.findById(thread_id);
       thread.replies.push(reply);
       thread.bumped_on = Date.now();
+      console.log("🚀 ~ file: api.js ~ line 121 ~ thread", thread)
       
       await thread.save();
 
