@@ -15,17 +15,15 @@ module.exports = function (app) {
             board: board,
           },
         },
-        {$unwind: "$replies"},
         {
-          $group: {
-            _id: "$_id",
-            text: {$first: "$text"},
-            replies: {$push: "$replies"},
-            created_on: {$first: "$created_on"},
-            bumped_on: {$first: "$bumped_on"},
-            replycount: {$sum: 1}
+          $project: {
+            text: 1,
+            replies: 1,
+            created_on: 1,
+            bumped_on: 1,
+            replycount: { $size: "$replies" },
           }
-       },
+        },
         {
           $lookup: {
             from: "replies",
@@ -45,8 +43,8 @@ module.exports = function (app) {
                 $project: {
                   text: 1,
                   created_on: 1,
-                }
-              }
+                },
+              },
             ],
           },
         },
@@ -57,7 +55,7 @@ module.exports = function (app) {
         },
         {
           $limit: 10,
-        },
+        }
       ]);
       res.json(result);
     })
@@ -70,6 +68,7 @@ module.exports = function (app) {
       });
       thread.delete_password = await generateHashPassword(delete_password);
       await thread.save();
+      console.log("🚀 ~ file: api.js ~ line 74 ~ thread", thread);
       res.redirect(`/b/${board}/`);
     })
     .put(async function (req, res) {
