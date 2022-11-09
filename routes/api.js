@@ -117,7 +117,7 @@ module.exports = function (app) {
 
       const thread = await Thread.findById(thread_id);
       thread.replies.push(reply);
-      thread.bumped_on = Date.now();
+      thread.bumped_on = reply.created_on;
       console.log("🚀 ~ file: api.js ~ line 121 ~ thread", thread)
       
       await thread.save();
