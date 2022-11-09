@@ -12,7 +12,7 @@ const ThreadSchema = new Schema(
     reported: { type: Boolean },
   },
   {
-    timestamps: { createdAt: "created_on", updatedAt: "bumped_on" },
+    timestamps: { createdAt: "created_on" },
     versionKey: false
   }
 );
