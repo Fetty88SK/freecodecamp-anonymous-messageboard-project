@@ -67,6 +67,7 @@ module.exports = function (app) {
         delete_password
       });
       
+      thread.created_on = thread.bumped_on = new Date();
       await thread.save();
       res.redirect(`/b/${board}/`);
     })
