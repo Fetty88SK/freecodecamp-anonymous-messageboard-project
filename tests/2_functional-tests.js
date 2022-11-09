@@ -4,25 +4,37 @@ const assert = chai.assert;
 const server = require("../server");
 const mongoose = require("mongoose");
 const Thread = require("../models/Thread");
+const db = require("../db");
 
 chai.use(chaiHttp);
 
 suite("Functional Tests", function () {
   //Before starting the test, create a sandboxed database connection
   //Once a connection is established invoke done()
-  let connection;
-  before(function (done) {
-    connection = mongoose.createConnection(process.env.MONGODB_URI);
-    connection.on("error", console.error.bind(console, "connection error"));
-    connection.once("open", function () {
-      console.log("We are connected to test database!");
-      done();
-    });
-  });
-  //After all tests are finished drop database and close connection
+  //   let connection;
+  //   before(function (done) {
+  //     connection = mongoose.createConnection(process.env.MONGODB_URI);
+  //     connection.on("error", console.error.bind(console, "connection error"));
+  //     connection.once("open", function () {
+  //       console.log("We are connected to test database!");
+  //       done();
+  //     });
+  //   });
+  //   //After all tests are finished drop database and close connection
+  //   after(function (done) {
+  //     connection.db.dropDatabase(function () {
+  //       connection.close(done);
+  //     });
+  //   });
+
   after(function (done) {
-    connection.db.dropDatabase(function () {
-      connection.close(done);
+    db.dropDatabase(function (err) {
+      if (err) {
+        console.error(err);
+        return done(err);
+      }
+      console.log("Database dropped");
+      done();
     });
   });
 
@@ -69,7 +81,11 @@ suite("Functional Tests", function () {
       chai
         .request(server)
         .post(`/api/replies/general?threadId=${threads[0]._id}`)
-        .send({ thread_id: threads[0]._id, text: "My Reply", delete_password: "password" })
+        .send({
+          thread_id: threads[0]._id,
+          text: "My Reply",
+          delete_password: "password",
+        })
         .end(function (err, res) {
           assert.equal(res.status, 200);
           done();
@@ -93,7 +109,10 @@ suite("Functional Tests", function () {
       chai
         .request(server)
         .put(`/api/replies/general`)
-        .send({ thread_id: threads[0]._id, reply_id: threads[0].replies[0]._id })
+        .send({
+          thread_id: threads[0]._id,
+          reply_id: threads[0].replies[0]._id,
+        })
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.text, "reported");
@@ -106,7 +125,11 @@ suite("Functional Tests", function () {
       chai
         .request(server)
         .delete(`/api/replies/general`)
-        .send({ thread_id: threads[0]._id, reply_id: threads[0].replies[0]._id, delete_password: "wrongpassword" })
+        .send({
+          thread_id: threads[0]._id,
+          reply_id: threads[0].replies[0]._id,
+          delete_password: "wrongpassword",
+        })
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.text, "incorrect password");
@@ -119,7 +142,11 @@ suite("Functional Tests", function () {
       chai
         .request(server)
         .delete(`/api/replies/general`)
-        .send({ thread_id: threads[0]._id, reply_id: threads[0].replies[0]._id, delete_password: "password" })
+        .send({
+          thread_id: threads[0]._id,
+          reply_id: threads[0].replies[0]._id,
+          delete_password: "password",
+        })
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.text, "success");
