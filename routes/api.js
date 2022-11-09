@@ -132,16 +132,25 @@ module.exports = function (app) {
       res.send("reported");
     })
     .delete(async function (req, res) {
-      const { thread_id, reply_id, delete_password } = req.body;
-      const reply = await Reply.findById(reply_id);
-      if (!reply) return res.send("Not found");
-
-      if (reply.delete_password !== delete_password.trim()) {
-        return res.send("incorrect password");
+      try {
+        const { thread_id, reply_id, delete_password } = req.body;
+        const reply = await Reply.findById(reply_id);
+        if (!reply) return res.send("Not found");
+  
+        if (reply.delete_password !== delete_password.trim()) {
+          return res.send("incorrect password");
+        }
+        reply.text = "[deleted]";
+        await reply.save();
+  
+        const thread = await Thread.findById(thread_id);
+        thread.bumped_on = Date.now();
+        await thread.save();
+  
+        res.send("success");
+      } catch (err) {
+        console.error(err);
+        res.send(err.message);
       }
-      reply.text = "[deleted]";
-      await reply.save();
-
-      res.send("success");
     });
 };
