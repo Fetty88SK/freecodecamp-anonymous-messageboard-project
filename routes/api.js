@@ -143,10 +143,6 @@ module.exports = function (app) {
         reply.text = "[deleted]";
         await reply.save();
   
-        const thread = await Thread.findById(thread_id);
-        thread.bumped_on = Date.now();
-        await thread.save();
-  
         res.send("success");
       } catch (err) {
         console.error(err);
