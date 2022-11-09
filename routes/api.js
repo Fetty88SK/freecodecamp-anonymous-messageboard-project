@@ -65,9 +65,10 @@ module.exports = function (app) {
       const thread = new Thread({
         board,
         text,
+        delete_password
       });
-      thread.delete_password = await generateHashPassword(delete_password);
-      thread.bumped_on = Date.now();
+      
+      thread.created_on = thread.bumped_on = Date.now();
       await thread.save();
       console.log("🚀 ~ file: api.js ~ line 74 ~ thread", thread);
       res.redirect(`/b/${board}/`);
@@ -84,8 +85,9 @@ module.exports = function (app) {
       const { thread_id, delete_password } = req.body;
       const thread = await Thread.findOne({ _id: thread_id });
       if (!thread) return res.send("Not found");
-      if (!(await compareHashPassword(delete_password, thread.delete_password)))
+      if (thread.delete_password !== delete_password.trim()) {
         return res.send("incorrect password");
+      }
       await thread.delete();
       res.send("success");
     });
@@ -108,14 +110,14 @@ module.exports = function (app) {
       const reply = new Reply({
         text,
         thread_id,
+        delete_password
       });
 
-      reply.delete_password = await generateHashPassword(delete_password);
 
       await reply.save();
 
       const thread = await Thread.findById(thread_id);
-      thread.replies.push(reply._id);
+      thread.replies.push(reply);
       thread.bumped_on = Date.now();
       
       await thread.save();
@@ -143,7 +145,7 @@ module.exports = function (app) {
       });
       if (!reply) return res.send("Not found");
 
-      if (!(await compareHashPassword(delete_password, reply.delete_password))) {
+      if (reply.delete_password !== delete_password.trim()) {
         return res.send("incorrect password");
       }
       reply.text = "[deleted]";
