@@ -113,7 +113,9 @@ module.exports = function (app) {
       await reply.save();
 
       const thread = await Thread.findById(thread_id);
-      thread.replies.push(reply);
+      thread.replies.push(reply._id);
+      thread.bumped_on = Date.now();
+      
       await thread.save();
 
       res.redirect(`/b/${board}/${thread_id}`);
@@ -139,8 +141,9 @@ module.exports = function (app) {
       });
       if (!reply) return res.send("Not found");
 
-      if (!(await compareHashPassword(delete_password, reply.delete_password)))
+      if (!(await compareHashPassword(delete_password, reply.delete_password))) {
         return res.send("incorrect password");
+      }
       reply.text = "[deleted]";
       await reply.save();
 

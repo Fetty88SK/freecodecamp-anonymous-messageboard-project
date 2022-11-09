@@ -9,7 +9,7 @@ const ThreadSchema = new Schema(
     replies: [{ type: ObjectId, ref: "Reply" }],
     text: { type: String, required: true },
     delete_password: { type: String, required: true },
-    reported: { type: Boolean, default: false },
+    reported: { type: Boolean },
   },
   {
     timestamps: { createdAt: "created_on", updatedAt: "bumped_on" },
