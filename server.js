@@ -9,12 +9,18 @@ const fccTestingRoutes  = require('./routes/fcctesting.js');
 const runner            = require('./test-runner');
 const helmet = require('helmet');
 
-require("./db");
+const db = require("./db");
 
 const app = express();
 
 app.use(helmet({
   referrerPolicy: { policy: "same-origin" },
+  dnsPrefetchControl: {
+    allow: false,
+  },
+  frameguard: {
+    action: "sameorigin",
+  }
 }))
 
 app.use('/public', express.static(process.cwd() + '/public'));
