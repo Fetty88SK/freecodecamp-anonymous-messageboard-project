@@ -116,8 +116,8 @@ module.exports = function (app) {
         "text created_on"
       );
 
-      if (!result) return res.send("Thread not found");
       console.timeEnd("[GET] - /api/replies/:board");
+      if (!result) return res.send("Thread not found");
       res.json(result);
     })
     .post(async function (req, res) {
