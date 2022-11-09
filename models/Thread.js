@@ -10,9 +10,11 @@ const ThreadSchema = new Schema(
     text: { type: String, required: true },
     delete_password: { type: String, required: true },
     reported: { type: Boolean, default: false },
+    bumped_on: { type: Date, default: Date.now },
+    created_on: { type: Date, default: Date.now },
   },
   {
-    timestamps: { createdAt: "created_on", updatedAt: "bumped_on" },
+    // timestamps: { createdAt: "created_on", updatedAt: "bumped_on" },
     versionKey: false
   }
 );

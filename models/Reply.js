@@ -9,9 +9,10 @@ const ReplySchema = new Schema(
     text: { type: String, required: true },
     delete_password: { type: String, required: true  },
     reported: { type: Boolean, default: false },
+    created_on: { type: Date, default: Date.now },
   },
   {
-    timestamps: { createdAt: "created_on" },
+    // timestamps: { createdAt: "created_on" },
     versionKey: false
   }
 );
