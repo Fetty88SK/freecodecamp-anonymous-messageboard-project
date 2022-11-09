@@ -67,6 +67,7 @@ module.exports = function (app) {
         text,
       });
       thread.delete_password = await generateHashPassword(delete_password);
+      thread.bumped_on = Date.now();
       await thread.save();
       console.log("🚀 ~ file: api.js ~ line 74 ~ thread", thread);
       res.redirect(`/b/${board}/`);
@@ -75,6 +76,7 @@ module.exports = function (app) {
       const { report_id } = req.body;
       const thread = await Thread.findById(report_id);
       thread.reported = true;
+      thread.bumped_on = Date.now();
       await thread.save();
       res.send("reported");
     })
