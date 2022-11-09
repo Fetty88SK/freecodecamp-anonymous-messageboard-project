@@ -72,8 +72,8 @@ module.exports = function (app) {
       res.redirect(`/b/${board}/`);
     })
     .put(async function (req, res) {
-      const { thread_id } = req.body;
-      const thread = await Thread.findById(thread_id);
+      const { report_id } = req.body;
+      const thread = await Thread.findById(report_id);
       thread.reported = true;
       await thread.save();
       res.send("reported");
