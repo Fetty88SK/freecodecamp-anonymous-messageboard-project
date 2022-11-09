@@ -2,7 +2,6 @@
 
 const Reply = require("../models/Reply");
 const Thread = require("../models/Thread");
-const { generateHashPassword, compareHashPassword } = require("../utils");
 
 module.exports = function (app) {
   app
@@ -68,7 +67,6 @@ module.exports = function (app) {
         delete_password
       });
       
-      // thread.created_on = thread.bumped_on = Date.now();
       await thread.save();
       res.redirect(`/b/${board}/`);
     })
@@ -119,16 +117,12 @@ module.exports = function (app) {
       thread.replies.push(reply);
       thread.bumped_on = reply.created_on;
       await thread.save();
-      console.log("🚀 ~ file: api.js ~ line 121 ~ thread", thread)
       
       res.redirect(`/b/${board}/${thread_id}`);
     })
     .put(async function (req, res) {
       const { thread_id, reply_id } = req.body;
-      const reply = await Reply.findOne({
-        _id: reply_id,
-        thread_id: thread_id,
-      });
+      const reply = await Reply.findById(reply_id);
 
       if (!reply) return res.send("Not found");
       reply.reported = true;
@@ -138,10 +132,7 @@ module.exports = function (app) {
     })
     .delete(async function (req, res) {
       const { thread_id, reply_id, delete_password } = req.body;
-      const reply = await Reply.findOne({
-        _id: reply_id,
-        thread_id: thread_id,
-      });
+      const reply = await Reply.findById(reply_id);
       if (!reply) return res.send("Not found");
 
       if (reply.delete_password !== delete_password.trim()) {
