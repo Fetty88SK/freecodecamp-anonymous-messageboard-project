@@ -2,7 +2,7 @@
 
 const crypto = require("crypto");
 
-const { threads, getThreadById} = require("../mock/threads");
+const { threads, getThreadById } = require("../mock/threads");
 
 const generateKey = () => {
   return crypto.randomBytes(20).toString("hex");
@@ -16,7 +16,7 @@ const sortByDateDesc = (arr, key) => {
   return [...arr].sort((a, b) => {
     return new Date(b[key]) - new Date(a[key]);
   });
-}
+};
 
 module.exports = function (app) {
   app
@@ -25,22 +25,29 @@ module.exports = function (app) {
       const board = req.params.board;
       console.time("[GET] - /api/threads/:board");
 
-      const result = sortByDateDesc(threads.filter((thread) => thread.board === board), 'bumped_on').slice(0, 10).map((thread) => {
-        return {
-          _id: thread._id,
-          text: thread.text,
-          created_on: thread.created_on,
-          bumped_on: thread.bumped_on,
-          replies: sortByDateDesc(thread.replies, 'created_on').slice(0, 3).map((reply) => {
-            return {
-              _id: reply._id,
-              text: reply.text,
-              created_on: reply.created_on,
-            };
-          }),
-          replycount: thread.replies.length,
-        };
-      });
+      const result = sortByDateDesc(
+        threads.filter((thread) => thread.board === board),
+        "bumped_on"
+      )
+        .slice(0, 10)
+        .map((thread) => {
+          return {
+            _id: thread._id,
+            text: thread.text,
+            created_on: thread.created_on,
+            bumped_on: thread.bumped_on,
+            replies: sortByDateDesc(thread.replies, "created_on")
+              .slice(0, 3)
+              .map((reply) => {
+                return {
+                  _id: reply._id,
+                  text: reply.text,
+                  created_on: reply.created_on,
+                };
+              }),
+            replycount: thread.replies.length,
+          };
+        });
 
       console.timeEnd("[GET] - /api/threads/:board");
 
@@ -108,7 +115,9 @@ module.exports = function (app) {
 
       if (!thread) return res.send("Thread not found");
 
-      thread.replies = thread.replies.map((reply) => {
+      const newThread = {...thread};
+
+      newThread.replies = newThread.replies.map((reply) => {
         return {
           _id: reply._id,
           text: reply.text,
@@ -117,7 +126,7 @@ module.exports = function (app) {
       });
 
       console.timeEnd("[GET] - /api/replies/:board");
-      res.json(result);
+      res.json(newThread);
     })
     .post(async function (req, res) {
       const board = req.params.board;
@@ -131,7 +140,7 @@ module.exports = function (app) {
         _id: generateKey(),
         text,
         thread_id,
-        delete_password,
+        delete_password: delete_password.trim(),
         reported: false,
         created_on: getCurrentDate(),
       };
@@ -168,20 +177,22 @@ module.exports = function (app) {
           return res.send("Thread not found");
         }
 
-        const reply = thread.replies.find((reply) => reply._id === reply_id);
+        const reply = thread.replies.find((reply) => {
+          return reply._id === reply_id;
+        });
         if (!reply) {
           console.timeEnd("[DELETE] - /api/replies/:board");
           return res.send("Reply not found");
         }
 
-        if (reply.delete_password !== delete_password) {
+        if (reply.delete_password !== delete_password.trim()) {
           console.timeEnd("[DELETE] - /api/replies/:board");
           return res.send("incorrect password");
         }
         reply.text = "[deleted]";
 
         console.timeEnd("[DELETE] - /api/replies/:board");
-        
+
         res.send("success");
       } catch (err) {
         console.error(err);
