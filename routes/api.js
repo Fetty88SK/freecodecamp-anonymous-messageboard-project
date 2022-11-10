@@ -116,7 +116,10 @@ module.exports = function (app) {
       if (!thread) return res.send("Thread not found");
 
       const newThread = {...thread};
-
+      
+      delete newThread.delete_password;
+      delete newThread.reported;
+      delete newThread.board;
       newThread.replies = newThread.replies.map((reply) => {
         return {
           _id: reply._id,
