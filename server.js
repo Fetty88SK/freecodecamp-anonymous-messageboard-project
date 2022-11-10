@@ -7,11 +7,13 @@ const cors        = require('cors');
 const apiRoutes         = require('./routes/api.js');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
 const runner            = require('./test-runner');
-const helmet = require('helmet');
-
+const helmet            = require('helmet');
+const http              = require('http');
+const terminate         = require('./terminate')
 // const db = require("./db");
 
 const app = express();
+const server = http.createServer(app);
 
 app.use(helmet({
   referrerPolicy: { policy: "same-origin" },
@@ -60,7 +62,7 @@ app.use(function(req, res, next) {
 });
 
 //Start our server and tests!
-const listener = app.listen(process.env.PORT || 3000, function () {
+const listener = server.listen(process.env.PORT || 3000, function () {
   console.log('Your app is listening on port ' + listener.address().port);
   if(process.env.NODE_ENV==='test') {
     console.log('Running Tests...');
@@ -75,4 +77,14 @@ const listener = app.listen(process.env.PORT || 3000, function () {
   }
 });
 
-module.exports = app; //for testing
+const exitHandler = terminate(server, {
+  coredump: false,
+  timeout: 500
+})
+
+process.on('uncaughtException', exitHandler(1, 'Unexpected Error'));
+process.on('unhandledRejection', exitHandler(1, 'Unhandled Promise'));
+process.on('SIGTERM', exitHandler(0, 'SIGTERM'));
+process.on('SIGINT', exitHandler(0, 'SIGINT'));
+
+module.exports = server; //for testing

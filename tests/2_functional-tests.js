@@ -4,7 +4,7 @@ const assert = chai.assert;
 const server = require("../server");
 const mongoose = require("mongoose");
 const Thread = require("../models/Thread");
-const db = require("../db");
+// const db = require("../db");
 const { threads, getThreadById} = require("../mock/threads");
 
 const promiseThread = () => {
