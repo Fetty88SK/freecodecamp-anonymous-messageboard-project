@@ -1,7 +1,22 @@
 "use strict";
 
-const Reply = require("../models/Reply");
-const Thread = require("../models/Thread");
+const crypto = require("crypto");
+
+const { threads, getThreadById} = require("../mock/threads");
+
+const generateKey = () => {
+  return crypto.randomBytes(20).toString("hex");
+};
+
+const getCurrentDate = () => {
+  return new Date().toISOString();
+};
+
+const sortByDateDesc = (arr, key) => {
+  return [...arr].sort((a, b) => {
+    return new Date(b[key]) - new Date(a[key]);
+  });
+}
 
 module.exports = function (app) {
   app
@@ -10,54 +25,23 @@ module.exports = function (app) {
       const board = req.params.board;
       console.time("[GET] - /api/threads/:board");
 
-      const result = await Thread.aggregate([
-        {
-          $match: {
-            board: board,
-          },
-        },
-        {
-          $project: {
-            text: 1,
-            replies: 1,
-            created_on: 1,
-            bumped_on: 1,
-            replycount: { $size: "$replies" },
-          },
-        },
-        {
-          $lookup: {
-            from: "replies",
-            localField: "replies",
-            foreignField: "_id",
-            as: "replies",
-            pipeline: [
-              {
-                $sort: {
-                  created_on: -1,
-                },
-              },
-              {
-                $limit: 3,
-              },
-              {
-                $project: {
-                  text: 1,
-                  created_on: 1,
-                },
-              },
-            ],
-          },
-        },
-        {
-          $sort: {
-            bumped_on: -1,
-          },
-        },
-        {
-          $limit: 10,
-        },
-      ]);
+      const result = sortByDateDesc(threads.filter((thread) => thread.board === board), 'bumped_on').slice(0, 10).map((thread) => {
+        return {
+          _id: thread._id,
+          text: thread.text,
+          created_on: thread.created_on,
+          bumped_on: thread.bumped_on,
+          replies: sortByDateDesc(thread.replies, 'created_on').slice(0, 3).map((reply) => {
+            return {
+              _id: reply._id,
+              text: reply.text,
+              created_on: reply.created_on,
+            };
+          }),
+          replycount: thread.replies.length,
+        };
+      });
+
       console.timeEnd("[GET] - /api/threads/:board");
 
       res.json(result);
@@ -67,14 +51,19 @@ module.exports = function (app) {
       const { text, delete_password } = req.body;
       console.time("[POST] - /api/threads/:board");
 
-      let currentDate = Date.now();
-      await Thread.create({
+      let currentDate = getCurrentDate();
+      let data = {
+        _id: generateKey(),
         board,
         text,
         delete_password,
         created_on: currentDate,
         bumped_on: currentDate,
-      });
+        reported: false,
+        replies: [],
+      };
+
+      threads.push(data);
 
       console.timeEnd("[POST] - /api/threads/:board");
 
@@ -83,21 +72,25 @@ module.exports = function (app) {
     .put(async function (req, res) {
       const { report_id } = req.body;
       console.time("[PUT] - /api/threads/:board");
-      const thread = await Thread.findByIdAndUpdate(report_id, { reported: true, bumped_on:  Date.now() }, { new: true });
+      const thread = getThreadById(report_id);
       console.timeEnd("[PUT] - /api/threads/:board");
       if (!thread) return res.send("Not found");
+      thread.reported = true;
+      thread.bumped_on = getCurrentDate();
       res.send("reported");
     })
     .delete(async function (req, res) {
       try {
         const { thread_id, delete_password } = req.body;
         console.time("[DELETE] - /api/threads/:board");
-        const reply = await Thread.findOneAndRemove({
-          _id: thread_id,
-          delete_password,
-        });
+        const index = threads.findIndex(
+          (thread) =>
+            thread._id === thread_id &&
+            thread.delete_password === delete_password
+        );
         console.timeEnd("[DELETE] - /api/threads/:board");
-        if (!reply) return res.send("incorrect password");
+        if (index === -1) return res.send("incorrect password");
+        threads.splice(index, 1);
         res.send("success");
       } catch (err) {
         console.error(err);
@@ -111,37 +104,40 @@ module.exports = function (app) {
       const threadId = req.query.thread_id;
       console.time("[GET] - /api/replies/:board");
 
-      const result = await Thread.findById(threadId).populate(
-        "replies",
-        "text created_on"
-      );
+      const thread = getThreadById(threadId);
+
+      if (!thread) return res.send("Thread not found");
+
+      thread.replies = thread.replies.map((reply) => {
+        return {
+          _id: reply._id,
+          text: reply.text,
+          created_on: reply.created_on,
+        };
+      });
 
       console.timeEnd("[GET] - /api/replies/:board");
-      if (!result) return res.send("Thread not found");
       res.json(result);
     })
     .post(async function (req, res) {
       const board = req.params.board;
       console.time("[POST] - /api/replies/:board");
       const { text, delete_password, thread_id } = req.body;
-      const reply = new Reply({
+
+      const thread = getThreadById(thread_id);
+      if (!thread) return res.send("Thread not found");
+
+      let reply = {
+        _id: generateKey(),
         text,
         thread_id,
         delete_password,
-      });
+        reported: false,
+        created_on: getCurrentDate(),
+      };
 
-      await reply.save();
-
-      const thread = await Thread.findByIdAndUpdate(
-        thread_id,
-        {
-          $push: {
-            replies: reply._id,
-          },
-          bumped_on: reply.created_on,
-        },
-        { new: true }
-      );
+      thread.replies.push(reply);
+      thread.bumped_on = reply.created_on;
 
       console.timeEnd("[POST] - /api/replies/:board");
       res.redirect(`/b/${board}/${thread._id.toString()}`);
@@ -149,7 +145,15 @@ module.exports = function (app) {
     .put(async function (req, res) {
       const { thread_id, reply_id } = req.body;
       console.time("[PUT] - /api/replies/:board");
-      const reply = await Reply.findByIdAndUpdate(reply_id, { reported: true });
+
+      const thread = getThreadById(thread_id);
+      if (!thread) return res.send("Thread not found");
+
+      const reply = thread.replies.find((reply) => reply._id === reply_id);
+      if (!reply) return res.send("Reply not found");
+
+      reply.reported = true;
+
       console.timeEnd("[PUT] - /api/replies/:board");
       if (!reply) return res.send("Not found");
       res.send("reported");
@@ -158,12 +162,26 @@ module.exports = function (app) {
       try {
         const { thread_id, reply_id, delete_password } = req.body;
         console.time("[DELETE] - /api/replies/:board");
-        const reply = await Reply.findOneAndUpdate(
-          { _id: reply_id, delete_password },
-          { text: "[deleted]" }
-        );
+        const thread = getThreadById(thread_id);
+        if (!thread) {
+          console.timeEnd("[DELETE] - /api/replies/:board");
+          return res.send("Thread not found");
+        }
+
+        const reply = thread.replies.find((reply) => reply._id === reply_id);
+        if (!reply) {
+          console.timeEnd("[DELETE] - /api/replies/:board");
+          return res.send("Reply not found");
+        }
+
+        if (reply.delete_password !== delete_password) {
+          console.timeEnd("[DELETE] - /api/replies/:board");
+          return res.send("incorrect password");
+        }
+        reply.text = "[deleted]";
+
         console.timeEnd("[DELETE] - /api/replies/:board");
-        if (!reply) return res.send("incorrect password");
+        
         res.send("success");
       } catch (err) {
         console.error(err);

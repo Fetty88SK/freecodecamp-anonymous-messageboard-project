@@ -9,7 +9,7 @@ const fccTestingRoutes  = require('./routes/fcctesting.js');
 const runner            = require('./test-runner');
 const helmet = require('helmet');
 
-const db = require("./db");
+// const db = require("./db");
 
 const app = express();
 
@@ -71,7 +71,7 @@ const listener = app.listen(process.env.PORT || 3000, function () {
         console.log('Tests are not valid:');
         console.error(e);
       }
-    }, 5000);
+    }, 1500);
   }
 });
 

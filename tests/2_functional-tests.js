@@ -5,6 +5,11 @@ const server = require("../server");
 const mongoose = require("mongoose");
 const Thread = require("../models/Thread");
 const db = require("../db");
+const { threads, getThreadById} = require("../mock/threads");
+
+const promiseThread = () => {
+    return Promise.resolve(threads);
+}
 
 chai.use(chaiHttp);
 
@@ -27,16 +32,16 @@ suite("Functional Tests", function () {
   //     });
   //   });
 
-  after(function (done) {
-    db.dropDatabase(function (err) {
-      if (err) {
-        console.error(err);
-        return done(err);
-      }
-      console.log("Database dropped");
-      done();
-    });
-  });
+//   after(function (done) {
+//     db.dropDatabase(function (err) {
+//       if (err) {
+//         console.error(err);
+//         return done(err);
+//       }
+//       console.log("Database dropped");
+//       done();
+//     });
+//   });
 
   test("Creating a new thread: POST request to /api/threads/{board}", function (done) {
     chai
@@ -64,7 +69,7 @@ suite("Functional Tests", function () {
       });
   });
   test("Reporting a thread: PUT request to /api/threads/{board}", function (done) {
-    Thread.find().then((threads) => {
+    promiseThread().then((threads) => {
       chai
         .request(server)
         .put("/api/threads/general")
@@ -72,12 +77,13 @@ suite("Functional Tests", function () {
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.text, "reported");
+          assert.equal(threads[0].reported, true);
           done();
         });
     });
   });
   test("Creating a new reply: POST request to /api/replies/{board}", function (done) {
-    Thread.find().then((threads) => {
+    promiseThread().then((threads) => {
       chai
         .request(server)
         .post(`/api/replies/general?threadId=${threads[0]._id}`)
@@ -93,7 +99,7 @@ suite("Functional Tests", function () {
     });
   });
   test("Viewing a single thread with all replies: GET request to /api/replies/{board}", function (done) {
-    Thread.find().then((threads) => {
+    promiseThread().then((threads) => {
       chai
         .request(server)
         .get(`/api/replies/general?threadId=${threads[0]._id}`)
@@ -105,7 +111,7 @@ suite("Functional Tests", function () {
     });
   });
   test("Reporting a reply: PUT request to /api/replies/{board}", function (done) {
-    Thread.find().then((threads) => {
+    promiseThread().then((threads) => {
       chai
         .request(server)
         .put(`/api/replies/general`)
@@ -116,12 +122,14 @@ suite("Functional Tests", function () {
         .end(function (err, res) {
           assert.equal(res.status, 200);
           assert.equal(res.text, "reported");
+          assert.equal(threads[0].replies[0].reported, true);
+
           done();
         });
     });
   });
   test("Deleting a reply with the incorrect password: DELETE request to /api/replies/{board} with an invalid delete_password", function (done) {
-    Thread.find().then((threads) => {
+    promiseThread().then((threads) => {
       chai
         .request(server)
         .delete(`/api/replies/general`)
@@ -138,7 +146,7 @@ suite("Functional Tests", function () {
     });
   });
   test("Deleting a reply with the correct password: DELETE request to /api/replies/{board} with a valid delete_password", function (done) {
-    Thread.find().then((threads) => {
+    promiseThread().then((threads) => {
       chai
         .request(server)
         .delete(`/api/replies/general`)
@@ -155,7 +163,7 @@ suite("Functional Tests", function () {
     });
   });
   test("Deleting a thread with the incorrect password: DELETE request to /api/threads/{board} with an invalid delete_password", function (done) {
-    Thread.find().then((threads) => {
+    promiseThread().then((threads) => {
       chai
         .request(server)
         .delete("/api/threads/general")
@@ -168,7 +176,7 @@ suite("Functional Tests", function () {
     });
   });
   test("Deleting a thread with the correct password: DELETE request to /api/threads/{board} with a valid delete_password", function (done) {
-    Thread.find().then((threads) => {
+    promiseThread().then((threads) => {
       chai
         .request(server)
         .delete("/api/threads/general")
