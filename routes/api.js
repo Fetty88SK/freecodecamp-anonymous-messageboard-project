@@ -77,9 +77,9 @@ module.exports = function (app) {
       res.redirect(`/b/${board}/`);
     })
     .put(async function (req, res) {
-      const { report_id } = req.body;
+      const { thread_id } = req.body;
       console.time("[PUT] - /api/threads/:board");
-      const thread = getThreadById(report_id);
+      const thread = getThreadById(thread_id);
       console.timeEnd("[PUT] - /api/threads/:board");
       if (!thread) return res.send("Not found");
       thread.reported = true;
